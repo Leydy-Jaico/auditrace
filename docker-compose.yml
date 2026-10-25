@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: auditrace
+      POSTGRES_PASSWORD: auditrace
+      POSTGRES_DB: auditrace
+    ports:
+      - "5432:5432"
+    volumes:
+      - auditrace_data:/var/lib/postgresql/data
+volumes:
+  auditrace_data:
+
