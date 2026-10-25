@@ -2,9 +2,19 @@
 
 Aplicación educativa en español basada en la referencia proporcionada. Incluye React + Vite + TypeScript, Tailwind CSS, un componente Button con el patrón shadcn/ui (Radix Slot + CVA), Lucide, Motion, Recharts, Express, Socket.IO y Prisma/PostgreSQL.
 
+## Publicación
+
+Aplicación: https://auditrace.onrender.com
+
+Frontend, API y Socket.IO comparten un servicio Node.js gratuito de Render. PostgreSQL reside en Supabase, esquema privado auditrace. Las variables DATABASE_URL y HOST_ACCESS_KEY están configuradas en Render; la dirección del QR se toma de RENDER_EXTERNAL_URL. No se necesitan servicios separados ni configurar una API pública de Supabase.
+
+Para exponer: abre Acceso expositor, introduce la clave privada, crea una sala y comparte el QR. Los estudiantes pueden acceder desde cualquier conexión a internet. El expositor asigna los roles. La sala 50ACA1 quedó preparada para la presentación.
+
+El plan gratuito puede tardar 50 segundos o más en despertar tras inactividad. Abre la página unos minutos antes de la exposición.
+
 ## Inicio rápido
 
-Requiere Node.js 22 o superior y npm.
+Requiere Node.js 22 y npm.
 
 ```sh
 npm install
@@ -24,7 +34,7 @@ En Windows, también puedes ejecutar INICIAR.ps1 después de instalar las depend
 
 Para desarrollo: npm run dev. Vite usa el puerto 5173 y reenvía /api y /socket.io al backend en 3001. Configura PUBLIC_URL para el puerto 5173.
 
-## Participación desde celulares
+## Participación desde celulares en modo local
 
 1. Conecta equipo y celulares a la misma red.
 2. Configura PUBLIC_URL con la IP LAN del equipo, por ejemplo http://192.168.1.10:3001 (o :5173 en desarrollo). Usa la IP real de tu equipo.
@@ -48,7 +58,7 @@ Descomenta DATABASE_URL en .env y ejecuta:
 
 ```sh
 npm run db:generate
-npm run db:push
+npm run db:migrate
 npm run build
 npm start
 ```
@@ -57,7 +67,7 @@ Prisma guarda cada sala como un snapshot JSON atómico en Session: participantes
 
 El servidor serializa las mutaciones para evitar doble puntuación y pérdida de actualizaciones. Esta versión está diseñada para UNA instancia Node.js. Para múltiples instancias se necesitarían transacciones/bloqueo entre procesos, almacenamiento compartido de presencia y adaptador Socket.IO.
 
-No se ejecutó una prueba con PostgreSQL real en este entorno: no había PostgreSQL ni Docker disponibles. Sí se generó el cliente Prisma y se probó el recorrido completo en memoria.
+Se aplicó la migración en Supabase y se verificó el recorrido completo con 12 participantes simulados, tanto localmente como en la URL pública de Render.
 
 ## Guion para la exposición
 
@@ -83,11 +93,11 @@ Estimación didáctica: 600 bytes/evento, 30 días/mes, US$ 0.02/GB-mes; no incl
 
 ## Sesiones y acceso
 
-Credenciales aleatorias por expositor y participante; no viajan en el QR ni en el estado público. El navegador las conserva en sessionStorage: una pestaña diferente permite probar otro participante. Recargar conserva el acceso; «Salir» lo elimina en esa pestaña. No hay recuperación de credenciales del expositor.
+Credenciales aleatorias por expositor y participante; no viajan en el QR ni en el estado público. El navegador las conserva en sessionStorage: una pestaña diferente permite probar otro participante. Recargar conserva el acceso; «Salir» lo elimina en esa pestaña. Para recuperar una sala en otro navegador, usa «Recuperar una sala existente» con el código y la clave del expositor. Se revoca la credencial anterior.
 
 Máximo 200 participantes por sala. Se rechazan alias duplicados y acciones fuera de fase. El servidor calcula las puntuaciones; no acepta valores de puntos del cliente.
 
-Antes de publicar configura HTTPS, HOST_ACCESS_KEY, DATABASE_URL, copias de seguridad y la URL pública. Los snapshots contienen tokens de sesión: limita el acceso a la base. No hay limpieza automática de salas ni caducidad de credenciales; la retención se administra en la base. El límite HTTP es básico y compartido por IP: ajustarlo si la universidad usa un único NAT.
+La publicación usa HTTPS, clave de expositor, PostgreSQL y control de origen HTTP/Socket.IO. Los tokens de sesión se almacenan como hashes SHA-256. No hay limpieza automática de salas ni caducidad de credenciales; la retención se administra en la base. El límite HTTP distingue credenciales de participantes y usa IP antes de autenticar. No se han contratado copias de seguridad de pago.
 
 ## Estructura
 
@@ -109,4 +119,14 @@ Antes de publicar configura HTTPS, HOST_ACCESS_KEY, DATABASE_URL, copias de segu
 
 ## Alcance de esta entrega
 
-El prompt recibido termina en «Registrar el punt…». Las fases 2 a 5 se completaron interpretando la imagen y los objetivos anteriores. No hay integración con un sistema académico real ni despliegue público. La estética, la ilustración y los componentes se construyeron de forma independiente; la imagen de referencia no se usó como fondo.
+El prompt recibido termina en «Registrar el punt…». Las fases 2 a 5 se completaron interpretando la imagen y los objetivos anteriores. No hay integración con un sistema académico real. La versión pública está desplegada en Render. La estética, la ilustración y los componentes se construyeron de forma independiente; la imagen de referencia no se usó como fondo.
+
+## Prueba pública final
+
+El 25/10/2026 se ejecutó tests/deployed-smoke.ts contra https://auditrace.onrender.com: 12 participantes, cinco fases, puntuación 100/100, PostgreSQL, WebSocket, permisos, recuperación y CORS correctos. Prueba sintética; no sustituye una prueba de la red física del auditorio.
+
+```sh
+TEST_BASE_URL=https://auditrace.onrender.com node --import tsx tests/deployed-smoke.ts
+```
+
+La prueba necesita HOST_ACCESS_KEY en el entorno o en .env; nunca subir .env al repositorio.
